@@ -10,9 +10,13 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.alibaba.fastjson.*;
 
 /** 
  * Tcp通信服务器 
@@ -24,7 +28,9 @@ public class CSServer {
     private List<Socket> mClientList = new ArrayList<Socket>();  
     private ServerSocket server = null;  
     private ExecutorService mExecutors = null; // 线程池对象  
-  
+    // 用户ID socketID对应表
+    private Map<String, Integer>userToSocket = new HashMap<String ,Integer>();
+    
     public static void main(String[] args) {  
         new CSServer();  
     }  
@@ -64,10 +70,8 @@ public class CSServer {
                 in = new BufferedReader(new InputStreamReader(  
                         socket.getInputStream()));// 获得输入流对象  
                 // 客户端只要一连到服务器，便发送连接成功的信息  
-//                message = "服务器地址：" + this.socket.getInetAddress();  
                 message = "当前连接总数:" + mClientList.size();  
                 System.out.println(message);// 在控制台输出  
-//                this.sendMessage(message);  
             } catch (IOException e) {  
                 e.printStackTrace();  
             }  
@@ -85,7 +89,7 @@ public class CSServer {
                             break;  
                         } else {  
                             // 接收客户端发过来的信息message，然后转发给客户端。  
-                            this.sendMessage(message,1);  
+                        	handleMsg(message);
                         }  
                     }  
                 }  
@@ -94,7 +98,25 @@ public class CSServer {
             }  
         }  
   
-        /** 
+        private void handleMsg(String jsonString) {
+        	JSONObject jsonObject = JSON.parseObject(jsonString);
+        	//JSON数据内应包含字段 form content fromUserId toUserId
+        	String form = jsonObject.getString("form");
+        	if(form.equals("test")){
+        		//空包
+        		String fromUserId = jsonObject.getString("fromUserId");
+        		userToSocket.put(fromUserId, mClientList.size()-1);
+        	}else{
+        		//发送消息
+        		String msg = jsonObject.getString("content");
+            	String toUserId = jsonObject.getString("toUserId");
+            	int toUserSocket = userToSocket.get(toUserId);
+            	
+    			this.sendMessage(msg, toUserSocket);
+        	}
+		}
+
+		/** 
          * 关闭客户端 
          *  
          * @throws IOException 
@@ -115,25 +137,43 @@ public class CSServer {
          * @param msg 
          */  
   
-        public void sendMessage(String msg,int now) {  
-            System.out.println(msg);// 在控制台输出  
-            int count = mClientList.size();  
-            // 遍历客户端集合  
-            for (int i = 0; i < count; i++) {  
-            	if(i == now)
-            		continue;
-                Socket mSocket = mClientList.get(i);  
-                PrintWriter out = null;  
-                try {  
-                    out = new PrintWriter(new BufferedWriter(  
-                            new OutputStreamWriter(mSocket.getOutputStream())),  
-                            true);// 创建输出流对象  
-                    out.println(msg);// 转发  
-                } catch (IOException e) {  
-                    e.printStackTrace();  
-                }  
+        //群发
+//        public void sendMessages(String msg,int toUserSocket) {  
+//            System.out.println(msg);// 在控制台输出  
+//            int count = mClientList.size();  
+//            // 遍历客户端集合  
+//            for (int i = 0; i < count; i++) {  
+//            	if(i == now)
+//            		continue;
+//                Socket mSocket = mClientList.get(i);  
+//                PrintWriter out = null;  
+//                try {  
+//                    out = new PrintWriter(new BufferedWriter(  
+//                            new OutputStreamWriter(mSocket.getOutputStream())),  
+//                            true);// 创建输出流对象  
+//                    out.println(msg);// 转发  
+//                } catch (IOException e) {  
+//                    e.printStackTrace();  
+//                }  
+//            }  
+//        }  
+//    }  
+    
+    //私聊
+    public void sendMessage(String msg,int toUserSocket) {  
+        System.out.println(msg);// 在控制台输出  
+        int count = mClientList.size();  
+        Socket mSocket = mClientList.get(toUserSocket);  
+        PrintWriter out = null;  
+        try {  
+        	out = new PrintWriter(new BufferedWriter(  
+            	new OutputStreamWriter(mSocket.getOutputStream())),  
+                	true);// 创建输出流对象  
+        	out.println(msg);// 转发  
+            } catch (IOException e) {  
+                e.printStackTrace();  
             }  
-        }  
     }  
+}  
   
 }  
