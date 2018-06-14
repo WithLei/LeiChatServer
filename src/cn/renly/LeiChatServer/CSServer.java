@@ -162,7 +162,6 @@ public class CSServer {
     //私聊
     public void sendMessage(String msg,int toUserSocket) {  
         System.out.println(msg);// 在控制台输出  
-        int count = mClientList.size();  
         Socket mSocket = mClientList.get(toUserSocket);  
         PrintWriter out = null;  
         try {  
