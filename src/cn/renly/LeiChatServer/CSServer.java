@@ -106,13 +106,19 @@ public class CSServer {
         		//空包
         		String fromUserId = jsonObject.getString("fromUserId");
         		userToSocket.put(fromUserId, mClientList.size()-1);
-        	}else{
-        		//发送消息
+        	}else if(form.equals("single")){
+        		//发送单条消息
         		String msg = jsonObject.getString("content");
             	String toUserId = jsonObject.getString("toUserId");
             	int toUserSocket = userToSocket.get(toUserId);
             	
     			this.sendMessage(msg, toUserSocket);
+        	}else{
+        		//群发消息
+        		String msg = jsonObject.getString("content");
+        		String fromUserId = jsonObject.getString("fromUserId");
+        		int fromUserSocket = userToSocket.get(fromUserId);
+        		this.sendMessages(msg,fromUserSocket);
         	}
 		}
 
@@ -138,26 +144,25 @@ public class CSServer {
          */  
   
         //群发
-//        public void sendMessages(String msg,int toUserSocket) {  
-//            System.out.println(msg);// 在控制台输出  
-//            int count = mClientList.size();  
-//            // 遍历客户端集合  
-//            for (int i = 0; i < count; i++) {  
-//            	if(i == now)
-//            		continue;
-//                Socket mSocket = mClientList.get(i);  
-//                PrintWriter out = null;  
-//                try {  
-//                    out = new PrintWriter(new BufferedWriter(  
-//                            new OutputStreamWriter(mSocket.getOutputStream())),  
-//                            true);// 创建输出流对象  
-//                    out.println(msg);// 转发  
-//                } catch (IOException e) {  
-//                    e.printStackTrace();  
-//                }  
-//            }  
-//        }  
-//    }  
+        public void sendMessages(String msg,int fromUserSocket) {  
+            System.out.println(msg);// 在控制台输出  
+            int count = mClientList.size();  
+            // 遍历客户端集合  
+            for (int i = 0; i < count; i++) {  
+            	if(i == fromUserSocket)
+            		continue;
+                Socket mSocket = mClientList.get(i);  
+                PrintWriter out = null;  
+                try {  
+                    out = new PrintWriter(new BufferedWriter(  
+                            new OutputStreamWriter(mSocket.getOutputStream())),  
+                            true);// 创建输出流对象  
+                    out.println(msg);// 转发  
+                } catch (IOException e) {  
+                    e.printStackTrace();  
+                }  
+        }  
+    }  
     
     //私聊
     public void sendMessage(String msg,int toUserSocket) {  
